@@ -1,0 +1,17 @@
+[project]
+name = "construct-watcher-slackbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "chompjs>=1.4.0",
+    "emoji>=2.15.0",
+    "python-dotenv>=1.2.1",
+    "regex>=2026.1.15",
+    "requests>=2.32.5",
+    "slack-bolt>=1.27.0",
+    "slack-cli-hooks>=0.3.0",
+    "slack-machine>=0.40.1",
+]
