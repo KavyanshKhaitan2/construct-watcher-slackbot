@@ -26,7 +26,7 @@ app = App(token=token)
 # app.client.chat_postMessage(channel="#kavyansh", text="Back online!")
 
 with open("allowed_channels.txt") as f:
-    channel_list = f.readlines()
+    channel_list = f.read().split('\n')
 
 
 # Listens to incoming messages that contain "hello"
