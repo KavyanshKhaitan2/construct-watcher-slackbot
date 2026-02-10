@@ -134,24 +134,32 @@ def time_to_do(message, say: Say):
     )
 
 
-@app.message("!construct_user")
-def construct_user(message, say: Say):
+@app.command("/construct-user-info")
+def construct_user_info(ack, say: Say, command):
+    # Acknowledge command request
+    ack()
+    print('acked request.')
+    slack_id = command["text"].split("|")[0].removeprefix("<@")
+    display_name = command["text"].split("|")[1].removesuffix(">")
+    res = say(f"<@{command['user_id']}> said:\n/construct-user-info {display_name}")
+    thread_ts = res["ts"]
+    say = Say(
+        client=say.client,
+        channel=say.channel,
+        thread_ts=thread_ts,
+        metadata=say.metadata,
+        build_metadata=say.build_metadata,
+    )
+    print(command["text"])
+    message = res
+
     try:
         if message["channel"] not in channel_list:
             say(
                 ":no-no: Please only use this bot in #construct-watcher-stats!\n\n",
-                thread_ts=message["ts"],
             )
             return
-        text: str = message["text"]
-        text = text.removeprefix("!construct_user").strip()
-        if not text:
-            say(
-                "Find anyone on construct using their slack mention.\n\nUsage:\n> !construct_user @mention",
-                thread_ts=message["ts"],
-            )
-            return
-        slack_id = text.removeprefix("<@").removesuffix(">")
+        slack_id = slack_id
         say(slack_id, thread_ts=message["ts"])
         with open("all_users_data.json") as f:
             data = json.load(f)
@@ -163,11 +171,10 @@ def construct_user(message, say: Say):
         if not found:
             say(
                 "Couldnt find anyone :sad-pf:\n\n_I can help you find anyone's construct account via their slack mention!_",
-                thread_ts=message["ts"],
             )
             return
         data = get_user_data(found["id"])
-        found = data['requestedUser']
+        found = data["requestedUser"]
         total_time = 0
         devlog_count = 0
         for devlog in data["devlogs"]:
@@ -201,120 +208,138 @@ def construct_user(message, say: Say):
                         "alt_text": "A Construct user's profile picture",
                     },
                 },
-    {
-                "type": "table",
-                "rows": [
-                    [
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": "Printer?",
-                                            "style": {
-                                                "bold": True
+                {
+                    "type": "table",
+                    "rows": [
+                        [
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": "Printer?",
+                                                "style": {"bold": True},
                                             }
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": "Reviewer?",
-                                            "style": {
-                                                "bold": True
+                                        ],
+                                    }
+                                ],
+                            },
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": "Reviewer?",
+                                                "style": {"bold": True},
                                             }
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": "Admin?",
-                                            "style": {
-                                                "bold": True
+                                        ],
+                                    }
+                                ],
+                            },
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": "Admin?",
+                                                "style": {"bold": True},
                                             }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
+                                        ],
+                                    }
+                                ],
+                            },
+                        ],
+                        [
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": (
+                                                    "Yes"
+                                                    if found["isPrinter"] == "true"
+                                                    else "No"
+                                                ),
+                                            }
+                                        ],
+                                    }
+                                ],
+                            },
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": (
+                                                    (
+                                                        "T1 Review"
+                                                        if found["hasT1Review"]
+                                                        == "true"
+                                                        else ""
+                                                    )
+                                                    + (
+                                                        "\nT2 Review"
+                                                        if found["hasT2Review"]
+                                                        == "true"
+                                                        else ""
+                                                    )
+                                                )
+                                                or "No",
+                                            }
+                                        ],
+                                    }
+                                ],
+                            },
+                            {
+                                "type": "rich_text",
+                                "elements": [
+                                    {
+                                        "type": "rich_text_section",
+                                        "elements": [
+                                            {
+                                                "type": "text",
+                                                "text": (
+                                                    "Yes"
+                                                    if found["hasAdmin"] == "true"
+                                                    else "No"
+                                                ),
+                                            }
+                                        ],
+                                    }
+                                ],
+                            },
+                        ],
                     ],
-                    [
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": "Yes" if found['isPrinter'] == 'true' else "No"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": (("T1 Review" if found['hasT1Review'] == 'true' else '') + ("\nT2 Review" if found['hasT2Review'] == 'true' else '')) or "No"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "rich_text",
-                            "elements": [
-                                {
-                                    "type": "rich_text_section",
-                                    "elements": [
-                                        {
-                                            "type": "text",
-                                            "text": "Yes" if found['hasAdmin'] == 'true' else "No"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                ]
-            }
+                },
             ],
-            thread_ts=message["ts"],
         )
 
         print(message)
     except Exception as _:
         traceback_text = traceback.format_exc()
-        say("_Construct Watcher tried finding you in the shelves, but tripped._", thread_ts=message["ts"])
-        say("Uh oh! You landed on an error.", thread_ts=message["ts"])
-        say(f"{traceback_text}", thread_ts=message["ts"])
-        say(f"cc <@U0A7776A2MT>. <@{message['user']}> found a bug in me! :bug:", thread_ts=message["ts"])
-        
+        say(
+            "_Construct Watcher tried finding you in the shelves, but tripped._",
+        )
+        say("Uh oh! You landed on an error.")
+        say(f"{traceback_text}")
+        say(
+            f"cc <@U0A7776A2MT>. <@{command['user_id']}> found a bug in me! :bug:",
+        )
 
 
 # Start your app
