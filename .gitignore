@@ -13,3 +13,5 @@ construct_cookie
 all_users_data.json
 
 .env
+
+__pycache__
