@@ -7,9 +7,10 @@ import dotenv
 from slack_bolt import App
 from slack_bolt.context.say.say import Say
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+import time
 
-from construct_sdk.get_dashboard_projects import get_projects
-from construct_sdk.get_user_data import get_user_data
+from construct_sdk.utils import get_page_data
+from construct_sdk.get_user_data import get_user_data, get_user_data_from_slack_id
 
 # This sample slack application uses SocketMode
 # For the companion getting started setup guide,
@@ -77,71 +78,283 @@ def message_hello(message, say: Say):
 GOAL = 42  # hours
 
 
-@app.message("!time")
-def time_to_do(message, say: Say):
-    print(f"[INFO] Received command: {message}")
-    print(type(message))
-    if message["user"] != "U0A7776A2MT":
-        say("You are not allowed to do this!", thread_ts=message["ts"])
-        print("Incorrect user!")
-        return
-    say("Please wait...", thread_ts=message["ts"])
-    projects = get_projects()
-    total_time = 0
-    total_total_time = 0
-    message_to_send = ""
-    say("Done! Here is what I found:", thread_ts=message["ts"])
-    for project in projects:
-        minutes = project["minutes"]
-        formatted_time = f"{int(minutes/60)}h {int(minutes%60)}m"
-        message_to_send += f"- *{project['name']}*: {formatted_time}" + (
-            " :tw_timer_clock: _cant redeem time below 2h_\n" if minutes < 120 else "\n"
+@app.command("/construct-time")
+def construct_time(ack, say: Say, command):
+    ack()
+    print("acked request for time")
+    slack_user_id = command["user_id"]
+    res = say(f"<@{slack_user_id}> ran:\n/construct_time")
+    thread_ts = res["ts"]
+    say = Say(
+        client=say.client,
+        channel=say.channel,
+        thread_ts=thread_ts,
+        metadata=say.metadata,
+        build_metadata=say.build_metadata,
+    )
+    try:
+        say(f"{slack_user_id}")
+        print(f"{command}")
+        message = res
+        print(f"[INFO] Received command: {message}")
+        print(type(message))
+        user_data = get_user_data_from_slack_id(slack_user_id)
+        say(f"Please wait, fetching all your projects! _(estimated time: {1.5 * len(user_data['projects'])}s)_")
+        start = time.time()
+        projects = []
+        for project in user_data["projects"]:
+            project_data, r = get_page_data(
+                f"https://construct.hackclub.com/dashboard/projects/{project['id']}"
+            )
+            projects.append(project_data[2]["data"])
+
+        dur = round(time.time() - start, 2)
+        say(
+            f"_fetched *{len(projects)}* projects in *{dur}* seconds, an avg. of *{round(dur/len(projects), 2)}* seconds per project._"
         )
-        total_total_time += minutes
-        if minutes < 120:
-            print("cant calculate", project)
-        if minutes > 120:
-            total_time += minutes
-    say(message_to_send, thread_ts=message["ts"])
-    formatted_time = f"{int(total_time/60)}h {int(total_time%60)}m"
-    formatted_total_time = f"{int(total_total_time/60)}h {int(total_total_time%60)}m"
-    say(f"*Total time*: {formatted_total_time}", thread_ts=message["ts"])
-    say(f"*Total redeemable time*: {formatted_time}", thread_ts=message["ts"])
 
-    deadline = datetime.date(2026, 3, 7)
-    time_left = deadline - datetime.date.today()
-    days_left = time_left.days
-    say(
-        f"{days_left} days left to {deadline} // Goal: {GOAL} hours",
-        thread_ts=message["ts"],
-    )
-    redeemable_daily_time = (GOAL - total_time / 60) / days_left * 60
-    total_daily_time = (GOAL - total_total_time / 60) / days_left * 60
-    formatted_redeemable_daily_time = (
-        f"{int(redeemable_daily_time/60)}h {int(redeemable_daily_time%60)}m"
-    )
-    formatted_total_daily_time = (
-        f"{int(total_daily_time/60)}h {int(total_daily_time%60)}m"
-    )
-
-    say(
-        f"Do {formatted_redeemable_daily_time} hours daily to reach goal. (only redeemable time)",
-        thread_ts=message["ts"],
-    )
-    say(
-        f"Do {formatted_total_daily_time} hours daily to reach goal. (total time)",
-        thread_ts=message["ts"],
-    )
+        table_rows = [
+            [  # Top header ("Project name", "Time spent", " ")
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Project name",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Time spent",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": " ",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+        ]
+        total_time = 0
+        total_redeemable_time = 0
+        for project in projects:
+            project_name = project["project"]["name"]
+            project_time_spent = int(project["project"]["timeSpent"])
+            total_time += project_time_spent
+            if project_time_spent > 120:
+                total_redeemable_time += project_time_spent
+            hours = project_time_spent // 60
+            mins = project_time_spent % 60
+            table_rows.append(
+                [
+                    {
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [{"type": "text", "text": project_name}],
+                            }
+                        ],
+                    },
+                    {
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [{"type": "text", "text": f"{hours}h {mins}m"}],
+                            }
+                        ],
+                    },
+                    {
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {"type": "text", "text": "⏲️" if hours < 2 else " "}
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            )
+        
+        hours = total_time // 60
+        mins = total_time % 60
+        total_time_formatted = f"{hours}h {mins}m"
+        
+        hours = total_redeemable_time // 60
+        mins = total_redeemable_time % 60
+        daily_reedemable_time_formatted = f"{hours}h {mins}m"
+        
+        table_rows += [
+            [
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Total",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": total_time_formatted,
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": " ",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+            [
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Redeemable",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": daily_reedemable_time_formatted,
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "⏲️",
+                                    "style": {"bold": True},
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+        ]
+        GOAL = 42 * 60
+        deadline = datetime.date(2026, 3, 7)
+        time_left = deadline - datetime.date.today()
+        days_left = time_left.days
+        
+        total_time = (GOAL - total_time) / days_left
+        total_redeemable_time = (GOAL - total_redeemable_time) / days_left
+        
+        hours = int(total_time // 60)
+        mins = int(total_time % 60)
+        daily_time_formatted = f"{hours}h {mins}m"
+        
+        hours = int(total_redeemable_time // 60)
+        mins = int(total_redeemable_time % 60)
+        daily_reedemable_time_formatted = f"{hours}h {mins}m"
+        
+        blocks = [{"type": "table", "rows": table_rows}, {
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": f"Deadline in *{days_left}* days ({deadline})\nGOAL: {GOAL/60} hours\nDo *{daily_time_formatted}* every day to reach GOAL.\nDo *{daily_reedemable_time_formatted}* every day to reach GOAL. *(calculated using redeemable time)*",
+			}
+		}]
+        say(blocks=blocks)
+    except Exception as _:
+        traceback_text = traceback.format_exc()
+        say(
+            "_Construct Watcher tried finding you in the shelves, but tripped._",
+        )
+        say("Uh oh! You landed on an error.")
+        say(f"{traceback_text}")
+        print(traceback_text)
+        say(
+            f"cc <@U0A7776A2MT>. <@{command['user_id']}> found a bug in me! :bug:",
+        )
 
 
 @app.command("/construct-user-info")
 def construct_user_info(ack, say: Say, command):
     # Acknowledge command request
     ack()
-    print('acked request.')
+    print("acked request for user-info.")
     slack_id = command["text"].split("|")[0].removeprefix("<@")
     display_name = command["text"].split("|")[1].removesuffix(">")
-    res = say(f"<@{command['user_id']}> said:\n/construct-user-info {display_name}")
+    res = say(f"<@{command['user_id']}> ran:\n/construct-user-info {display_name}")
     thread_ts = res["ts"]
     say = Say(
         client=say.client,

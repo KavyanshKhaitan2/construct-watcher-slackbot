@@ -18,7 +18,14 @@ def get_user_data(user_id:int, cookies=None):
     return data
 
 def get_user_data_from_slack_id(slack_id):
-    ...
+    with open("all_users_data.json") as f:
+        data = json.load(f)
+
+    for row in data:
+        if row["slackId"] == slack_id:
+            return get_user_data(row['id'])
+    return None
+
 
 def main(starting_index = 1):
     global avg_time, number_of_times
