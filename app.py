@@ -8,6 +8,8 @@ from slack_bolt import App
 from slack_bolt.context.say.say import Say
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 import time
+import models
+import asyncio
 
 from construct_sdk.utils import get_page_data
 from construct_sdk.get_user_data import get_user_data, get_user_data_from_slack_id
@@ -69,14 +71,12 @@ def message_hello(message, say: Say):
     )
 
 
-GOAL = 42  # hours
-
 @command("construct-time")
 def construct_time(ack, say: Say, command):
     ack()
     print("acked request for time")
     slack_user_id = command["user_id"]
-    res = say(f"<@{slack_user_id}> ran:\n/construct-time")
+    res = say(f"<@{slack_user_id}> ran:\n/construct-time {command['text']}")
     thread_ts = res["ts"]
     say = Say(
         client=say.client,
@@ -94,10 +94,19 @@ def construct_time(ack, say: Say, command):
             return
         say(f"{slack_user_id}")
         print(f"{command}")
-        print(f"[INFO] Received command: {message}")
         print(type(message))
         start = time.time()
         user_data = get_user_data_from_slack_id(slack_user_id)
+        config, _ = models.UserConfigs.get_or_create(user_id=user_data['requestedUser']['id'])
+        text = command['text']
+        if text:
+            try:
+                val = int(text)
+            except ValueError:
+                say("Sorry, but the inputted clay goal value is invalid! Please try again with a valid integer.")
+                return
+            config.goal = val
+            config.save()
         say(f"Please wait, fetching all your projects! _(estimated time: {round((time.time()-start) * len(user_data['projects']), 2)}s)_")
         start = time.time()
         projects = []
@@ -383,13 +392,13 @@ def construct_time(ack, say: Say, command):
                 },
             ],
         ]
-        GOAL = 42 * 60
+        goal = config.goal * 60
         deadline = datetime.date(2026, 3, 7)
         time_left = deadline - datetime.date.today()
         days_left = time_left.days
         
-        total_time_for_calc = (GOAL - total_time) / days_left
-        total_clay_time_for_calc = (GOAL - total_clay_time) / days_left
+        total_time_for_calc = (goal - total_time) / days_left
+        total_clay_time_for_calc = (goal - total_clay_time) / days_left
         
         hours = int(total_time_for_calc // 60)
         mins = int(total_time_for_calc % 60)
@@ -403,7 +412,7 @@ def construct_time(ack, say: Say, command):
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": f"Deadline in *{days_left}* days ({deadline})\nGOAL: {GOAL/60} hours\nDo *{daily_time_formatted}* every day to reach GOAL.\nDo *{daily_clay_time_formatted}* every day to reach GOAL. *(calculated using clay time)*",
+				"text": f"Deadline in *{days_left}* days ({deadline})\nGOAL: {goal/60} hours\nDo *{daily_time_formatted}* every day to reach GOAL.\nDo *{daily_clay_time_formatted}* every day to reach GOAL. *(calculated using clay time)*",
 			}
 		}]
         say(blocks=blocks, text="Your construct report has been generated.")
