@@ -10,6 +10,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 import time
 import models
 import asyncio
+import scheduled_tasks
 
 from construct_sdk.utils import get_page_data
 from construct_sdk.get_user_data import get_user_data, get_user_data_from_slack_id
@@ -97,11 +98,18 @@ def construct_time(ack, say: Say, command):
         print(type(message))
         start = time.time()
         user_data = get_user_data_from_slack_id(slack_user_id)
+        if user_data is None:
+            say("Didnt find you in my db! If you think this is a mistake, please DM @kavyansh.tech")
+            return
+        print(user_data)
         config, _ = models.UserConfigs.get_or_create(user_id=user_data['requestedUser']['id'])
         text = command['text']
         if text:
             try:
                 val = int(text)
+                if val <= 0:
+                    say(":no-no: Why do you want your goal to be negative tho?")
+                    return
             except ValueError:
                 say("Sorry, but the inputted clay goal value is invalid! Please try again with a valid integer.")
                 return
@@ -399,14 +407,20 @@ def construct_time(ack, say: Say, command):
         
         total_time_for_calc = (goal - total_time) / days_left
         total_clay_time_for_calc = (goal - total_clay_time) / days_left
+
+        if total_time_for_calc > 0:
+            hours = int(total_time_for_calc // 60)
+            mins = int(total_time_for_calc % 60)
+            daily_time_formatted = f"{hours}h {mins}m"
+        else:
+            daily_time_formatted = "0m (goal reached :yay:)"
         
-        hours = int(total_time_for_calc // 60)
-        mins = int(total_time_for_calc % 60)
-        daily_time_formatted = f"{hours}h {mins}m"
-        
-        hours = int(total_clay_time_for_calc // 60)
-        mins = int(total_clay_time_for_calc % 60)
-        daily_clay_time_formatted = f"{hours}h {mins}m"
+        if total_clay_time_for_calc > 0:
+            hours = int(total_clay_time_for_calc // 60)
+            mins = int(total_clay_time_for_calc % 60)
+            daily_clay_time_formatted = f"{hours}h {mins}m"
+        else:
+            daily_clay_time_formatted = "0m (goal reached :yay:)"
         
         blocks = [{"type": "table", "rows": table_rows}, {
 			"type": "section",
@@ -640,4 +654,5 @@ def construct_user_info(ack, say: Say, command):
 
 # Start your app
 if __name__ == "__main__":
+    scheduled_tasks.start_scheduler()
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()

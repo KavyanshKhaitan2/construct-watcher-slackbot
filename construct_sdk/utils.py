@@ -23,13 +23,16 @@ def get_page_data(page_url, cookies=None):
     r.encoding = 'utf-8'
     if not r.ok:
         return None, r
-    soup = BeautifulSoup(r.text, features="html.parser")
-    script = soup.find("script")
-    text = replace_emoji(script.text, "<emoji>")
-    data = None
-    for line in text.splitlines():
-        if "data" not in line:
-            continue
-        data = line.strip().removeprefix("data:").removesuffix(",")
-    data = parse_js_object(data)
-    return data, r
+    try:
+        return r.json(), r
+    except requests.JSONDecodeError:
+        soup = BeautifulSoup(r.text, features="html.parser")
+        script = soup.find("script")
+        text = replace_emoji(script.text, "<emoji>")
+        data = None
+        for line in text.splitlines():
+            if "data" not in line:
+                continue
+            data = line.strip().removeprefix("data:").removesuffix(",")
+        data = parse_js_object(data)
+        return data, r
