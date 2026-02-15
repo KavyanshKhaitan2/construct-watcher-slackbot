@@ -1,4 +1,5 @@
 from construct_sdk.utils import get_page_data
+from construct_sdk.get_user_data import get_user_data
 from send_messages import send_slack_message
 from models import Devlogs
 import dotenv
@@ -28,6 +29,9 @@ def reload_devlogs():
             devlog_time_spent=entry['devlog']['timeSpent'],
             devlog_created=entry['devlog']['createdAt']
         )
+        user_data = get_user_data(devlog.user_id)
+        slack_id = user_data['requestedUser']['slackId']
+        
         
         send_slack_message(os.environ.get('DEFAULT_CHANNEL'), text=None, blocks=[
             {
@@ -42,11 +46,15 @@ def reload_devlogs():
                 "fields": [
                     {
                         "type": "mrkdwn",
-                        "text": f"*Project:*\n{devlog.project_name}"
+                        "text": f"*User:*\n<https://construct.hackclub.com/dashboard/users/{devlog.user_id}|{devlog.user_name}>\n<@{slack_id}>"
                     },
                     {
                         "type": "mrkdwn",
-                        "text": f"*Time spent:*\n{devlog.devlog_time_spent}"
+                        "text": f"*Project:*\n<https://construct.hackclub.com/dashboard/projects/{devlog.project_id}|{devlog.project_name}>"
+                    },
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Time spent:*\n{devlog.devlog_time_spent} minutes"
                     },
                     {
                         "type": "mrkdwn",

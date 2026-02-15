@@ -44,6 +44,7 @@ def command(command):
 @app.message("!hello")
 def message_hello(message, say: Say):
     # say() sends a message to the channel where the event was triggered
+    app.client.reactions_add(channel=message['channel'], name='+1', timestamp=message['ts'])
     say(
         blocks=[
             {
