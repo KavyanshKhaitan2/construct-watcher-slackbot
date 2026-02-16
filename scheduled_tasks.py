@@ -78,7 +78,11 @@ def reload_devlogs():
         
 def _start_scheduler():
     while True:
-        schedule.run_pending()
+        try:
+            schedule.run_pending()
+        except Exception:
+            ...
+        
         time.sleep(0.5)
 
 def start_scheduler():
