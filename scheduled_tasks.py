@@ -12,6 +12,7 @@ dotenv.load_dotenv()
 @schedule.every(5).seconds.do
 def reload_devlogs():
     data, r = get_page_data('https://construct.hackclub.com/dashboard/explore')
+    data['devlogs'] = reversed(data['devlogs'])
     for entry in data['devlogs']:
         devlog = Devlogs.get_or_none(devlog_id=entry['devlog']['id'])
         if devlog is not None:
