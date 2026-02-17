@@ -450,7 +450,12 @@ def construct_user_info(ack, say: Say, command):
     ack()
     print("acked request for user-info.")
     slack_id = command["text"].split("|")[0].removeprefix("<@")
-    display_name = command["text"].split("|")[1].removesuffix(">")
+    if slack_id:
+        display_name = command["text"].split("|")[1].removesuffix(">")
+    else:
+        slack_id = command['user_id']
+        display_name = command['user_name']
+    
     res = say(f"<@{command['user_id']}> ran:\n/construct-user-info {display_name}")
     thread_ts = res["ts"]
     say = Say(
