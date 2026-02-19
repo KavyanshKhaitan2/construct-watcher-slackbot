@@ -1,19 +1,20 @@
-# Getting Started ⚡️ Bolt for Python
-
-> Slack app example from 📚 [Getting started with Bolt for Python](https://docs.slack.dev/tools/bolt-python/getting-started)
+# Construct Watcher Slackbot
 
 ## Overview
 
-This is a Slack app built with the [Bolt for Python framework](https://docs.slack.dev/tools/bolt-python/) that showcases responding to events and interactive buttons.
+This is a Slack bot built for #construct hack clubbers.
 
 ## Running locally
 
 ### 1. Setup environment variables
-
+Go to `.env` and put these in:
 ```zsh
+DEBUG=<true|false>
 # Replace with your tokens
-export SLACK_BOT_TOKEN=<your-bot-token>
-export SLACK_APP_TOKEN=<your-app-level-token>
+SLACK_BOT_TOKEN=<your-bot-token>
+SLACK_APP_TOKEN=<your-app-level-token>
+
+DEFAULT_CHANNEL=<slack-channel-id>
 ```
 
 ### 2. Setup your local project
@@ -30,27 +31,17 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # Install the dependencies
-pip install -r requirements.txt
+pipx install uv # just install uv. skip the hassle.
 ```
 
 ### 3. Start servers
 
 ```zsh
-python3 app.py
+# For prod:
+uv run app.py
+
+# For dev:
+uv run slack run
 ```
 
-## More examples
-
-Looking for more examples of Bolt for Python? Browse to [bolt-python/examples/](https://github.com/slackapi/bolt-python/tree/main/examples) for a long list of usage, server, and deployment code samples!
-
-## Contributing
-
-### Issues and questions
-
-Found a bug or have a question about this project? We'd love to hear from you!
-
-1. Browse to [slackapi/bolt-python/issues](https://github.com/slackapi/bolt-python/issues/new/choose)
-1. Create a new issue
-1. Mention that you're using this example app
-
-See you there and thanks for helping to improve Bolt for everyone!
+Voila! and just add the bot to your channel lol.
