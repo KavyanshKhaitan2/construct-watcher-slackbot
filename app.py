@@ -475,21 +475,21 @@ def construct_time(ack, say: Say, command):
                     "text": f"Deadline in *{days_left}* days ({deadline})\nGOAL: {goal/60} hours\nDo *{daily_time_formatted}* every day to reach GOAL.\nDo *{daily_clay_time_formatted}* every day to reach GOAL. *(calculated using clay time)*",
                 },
             },
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "Open Printer Shop :3d-printer-icon: ",
-                            "emoji": True,
-                        },
-                        "value": "show",
-                        "action_id": "printer-shop",
-                    }
-                ],
-            },
+            # {
+            #     "type": "actions",
+            #     "elements": [
+            #         {
+            #             "type": "button",
+            #             "text": {
+            #                 "type": "plain_text",
+            #                 "text": "Open Printer Shop :3d-printer-icon: ",
+            #                 "emoji": True,
+            #             },
+            #             "value": "show",
+            #             "action_id": "printer-shop",
+            #         }
+            #     ],
+            # },
         ]
         say(blocks=blocks, text="Your construct report has been generated.")
     except Exception as _:
