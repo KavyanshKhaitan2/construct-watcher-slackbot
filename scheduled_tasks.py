@@ -87,7 +87,11 @@ def _start_scheduler():
         time.sleep(0.5)
 
 def start_scheduler():
-    threading.Thread(target=_start_scheduler).start()
+    try:
+        threading.Thread(target=_start_scheduler).start()
+        # send_slack_message(os.environ.get('DEFAULT_CHANNEL'), "yo, im up again.")
+    except Exception:
+        ...
 
 
 if __name__ == "__main__":
