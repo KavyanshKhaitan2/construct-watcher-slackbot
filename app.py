@@ -164,8 +164,13 @@ def construct_time(ack, say: Say, command):
             projects.append(project_data[2]["data"])
 
         dur = round(time.time() - start, 2)
+        
+        if len(projects):
+            text = f", an avg. of *{round(dur/len(projects), 2)}* seconds per project"
+        else:
+            text = ""
         say(
-            f"_fetched *{len(projects)}* projects in *{dur}* seconds{f", an avg. of *{round(dur/len(projects), 2)}* seconds per project" if len(projects) > 0 else ""}._"
+            f"_fetched *{len(projects)}* projects in *{dur}* seconds{text}._"
         )
 
         table_rows = [
