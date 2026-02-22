@@ -10,18 +10,36 @@ Currently, I have two (but extensive) commands.
 
 ### /construct-time \[goal in clay\]
 
+<table>
+  <tr>
+    <td>
 This command lets you know how far you are from your goal! It also shows a daily required time you will have to spend CADding. (the goal field is optional, the value you put in it gets stored in the SQLite DB.)
+    </td>
+    <td>
+<img width="791" height="787" alt="image" src="https://github.com/user-attachments/assets/bf5be92e-b8b9-44f7-93af-5b93f6fe26df" />
+    </td>
+  </tr>
+</table>
 
 ### /construct-user-info \<slack user mention>
 
-Just mention the user you want to find the info of.
-This bot will do the rest for you. (just make sure that that user is doing construct.)
-
-If you dont know whom to mention, you can use @kavyansh.tech, @Shadow, @Arca, etc.
+<table>
+  <tr>
+    <td>
+  Just mention the user you want to find the info of.
+  This bot will do the rest for you. (just make sure that that user is doing construct.)
+      <br><br>
+  If you dont know whom to mention, you can use @kavyansh.tech, @Shadow, @Arca, etc.
+    </td>
+    <td>
+      <img width="776" height="515" alt="image" src="https://github.com/user-attachments/assets/8bb657e5-913f-4748-9402-7584fd052a1b" />
+    </td>
+  </tr>
+</table>
 
 ### Note!
 
-Incase this doesnt work and throws a DB error, please DM me (@kavyansh.). I need to run a script that updates the KV pairs for slack user ID -> construct user ID.
+Incase this doesnt work and throws a DB error, please DM me (@kavyansh.). I need to run a script that updates the KV pairs for slack user ID and construct user ID.
 
 ## Running locally
 
