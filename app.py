@@ -445,7 +445,7 @@ def construct_time(ack, say: Say, command):
         goal = config.goal * 60
         deadline = datetime.date(2026, 3, 9)
         time_left = deadline - datetime.date.today()
-        days_left = time_left.days
+        days_left = max(time_left.days, 1) # ssh.. deadline is 2026-3-9
 
         total_time_for_calc = (goal - total_time) / days_left
         total_clay_time_for_calc = (goal - total_clay_time) / days_left
