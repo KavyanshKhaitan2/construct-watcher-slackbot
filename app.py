@@ -443,7 +443,7 @@ def construct_time(ack, say: Say, command):
             ],
         ]
         goal = config.goal * 60
-        deadline = datetime.date(2026, 3, 9)
+        deadline = datetime.date(2026, 3, 31)
         time_left = deadline - datetime.date.today()
         days_left = max(time_left.days, 1) # ssh.. deadline is 2026-3-9
 
